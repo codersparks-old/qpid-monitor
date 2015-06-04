@@ -58,19 +58,18 @@ class MyConsole(Console):
     binding_low =  record.bindingCountLow
     # Print the queue name and some statistics
     print "queue=%s,enqueues=%d,dequeues=%d,queue_size_count=%d,queue_size_bytes=%d,consumers=%d,consumers_high=%d,consumers_low=%d, bindings=%d, bindings_high=%d, bindings_low=%d" %  (queue_name,total_enqueues,total_dequeues,queue_size_count,queue_size_bytes,consumer_count,consumer_high,consumer_low,binding_count,binding_high, binding_low)
-    #try:
     host = "127.0.0.1"
     port = 12345
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((host, port))
-    s.sendall("queue=%s,enqueues=%d,dequeues=%d,queue_size_count=%d,queue_size_bytes=%d,consumers=%d,consumers_high=%d,consumers_low=%d, bindings=%d, bindings_high=%d, bindings_low=%d" %  (queue_name,total_enqueues,total_dequeues,queue_size_count,queue_size_bytes,consumer_count,consumer_high,consumer_low,binding_count,binding_high, binding_low))
-    #except Exception, e:
-    #    print "Error %s" % (e,)
-    #finally:
-    s.close()
+    #self.send_to_splunk(host, port, "queue=%s,enqueues=%d,dequeues=%d,queue_size_count=%d,queue_size_bytes=%d,consumers=%d,consumers_high=%d,consumers_low=%d, bindings=%d, bindings_high=%d, bindings_low=%d" %  (queue_name,total_enqueues,total_dequeues,queue_size_count,queue_size_bytes,consumer_count,consumer_high,consumer_low,binding_count,binding_high, binding_low))
     # if the delete-time is non-zero, this object has been deleted.  Remove it from the map.
     if record.getTimestamps()[2] > 0:
       queueMap.pop(oid)
+
+    def send_to_splunk(self, host, port, message):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((host, port))
+        s.sendall(message)
+        s.close()
 
 # Create an instance of the QMF session manager.  Set userBindings to True to allow
 # this program to choose which objects classes it is interested in.
