@@ -1,12 +1,13 @@
 from qmf.console import Session, Console
 import logging
+from time import sleep, ctime
 
 class QpidMonitor(Console):
-	logger = logging.logger("qpid-monitor")
+	logger = logging.getLogger("qpid-monitor")
 	queueMap = {}
 	exchangeMap = {}
 	queueInterest = []
-	exchangeIntereest = []
+	exchangeInterest = []
 	
 	def add_queue_interest(self, queue_name):
 		self.logger.debug("Adding interest in queue: %s" % queue_name) 
@@ -14,7 +15,7 @@ class QpidMonitor(Console):
 		
 	def add_exchange_interest(self, exchange_name):
 		self.logger.debug("Adding interest in exchange: %s" % exchange_name)
-		self.exchangeIntereest.append(exchange_name)
+		self.exchangeInterest.append(exchange_name)
 		
 	def objectProps(self, broker, record):
 		
@@ -23,7 +24,7 @@ class QpidMonitor(Console):
 		self.logger.debug("Processing Property, class name: %s" % classKey.getClassName())
 		if classKey.getClassName() == "queue":
 			name = record.name
-			if name not in queueInterest:
+			if name not in self.queueInterest:
 				self.logger.debug("Discarding record as queue %s not registered for queue interest" % name)
 				return
 			
@@ -34,7 +35,7 @@ class QpidMonitor(Console):
 			
 		elif classKey.getClassName() == "exchange":
 			name = record.name
-			if name not in exchangeIntereest:
+			if name not in self.exchangeInterest:
 				self.logger.debug("Discarding record as exchange %s not registered for exchange interest" % name)
 				return
 				
@@ -48,7 +49,7 @@ class QpidMonitor(Console):
 	def objectStats(self, broker, record):
 		''' Function handles statistic updates from the qmf framework '''
 		
-		timestamp = time.ctime()
+		timestamp = ctime()
 		
 		# We are only interested in those queues we have registed into hte queueMap via
 		# the objectProps function if the object id is not a key of the map then we simply return
@@ -75,7 +76,7 @@ class QpidMonitor(Console):
 			self.logger.debug("Processing exchange stats, id: %s, name: %s" % (oid, exchange_name))
 			
 			# We then hange the record in the handle_exchange function
-			self.handle_exchange_record(queue_name, record, timestamp)
+			self.handle_exchange_record(exchange_name, record, timestamp)
 			
 			# if the delete-time is non-zero, this object has been deleted.  Remove it from the map.
 			if record.getTimestamps()[2] > 0:
@@ -84,10 +85,10 @@ class QpidMonitor(Console):
 	
 	def handle_queue_record(self, name, record, timestamp):
 		
-		self.logger.debug("%s: Hadling record from queue %s, details %s" % (timestamp, name, record))
+		print("%s: Hadling record from queue %s, details %s" % (timestamp, name, vars(record)))
 	
 	def handle_exchange_record(self, name, record, timestamp):
-		self.logger.debug("%s: Handling record from exchange %s, details %s" % (timestamp, name, record))
+		print("%s: Handling record from exchange %s, details %s" % (timestamp, name, vars(record)))
 		
 	def stop_monitoring(self):
 		self.monitor = False
@@ -98,17 +99,18 @@ class QpidMonitor(Console):
 		
 		# Create an instance of the QMF session manager.  Set userBindings to True to allow
 		# this program to choose which objects classes it is interested in.
-		sess = Session(MyConsole(), manageConnections=True, rcvEvents=False, userBindings=True)
+		sess = Session(self, manageConnections=True, rcvEvents=False, userBindings=True)
 		
 		# Register to receive updates for broker:queue objects.
 		sess.bindClass("org.apache.qpid.broker", "queue")
+		sess.bindClass("org.apache.qpid.broker", "exchange")
 		broker = sess.addBroker()
 		
 		self.monitor = True
 		while(self.monitor):
 			sleep(1)
 		
-		self.logger.debug("monitor set to false, therefore stopping monitor
+		self.logger.debug("monitor set to false, therefore stopping monitor")
 		# Disconnect the broker before exiting
 		sess.delBroker(broker)
 		sess = None
